@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            background-image: url('cloud-gaming.jpg');
+            background-size: cover; /* Cover the entire viewport */
+            background-position: center; /* Center the image */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+            width: 400px; /* Adjust width as needed */
+            position: relative; /* Ensure the container is positioned relative */
+        }
+        .game-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: red; /* Make text red */
+        }
+        .snake-image {
+            width: 200px; /* Increase width as desired */
+            height: auto;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #000;
+            background-color: lightblue; /* White background for the canvas */
+        }
+        .exit-button {
+            position: absolute;
+            top: 10px; /* Adjust top position */
+            left: 10px; /* Adjust left position */
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <button class="exit-button" onclick="goBack()">Exit Game</button>
+        <img src="birsss.png" alt="Snake Image" class="snake-image"> <!-- Replace Snake Image with your logo -->
+        <h1 class="game-title"></h1>
+        <p class="instructions">Press Spacebar to start and fly the bird.</p>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let bird = {
+            x: 50,
+            y: canvas.height / 2 - 15,
+            width: 30,
+            height: 30,
+            speedY: 0,
+            gravity: 0.5,
+            jump: -9
+        };
+
+        let pipes = [];
+        let pipeWidth = 70;
+        let pipeGap = 200; // Adjust pipe gap as desired
+        let pipeSpeed = 3;
+
+        let score = 0;
+        let gameStarted = false;
+        let gameOver = false;
+
+        function gameLoop() {
+            ctx.fillStyle = 'lightblue';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (!gameStarted) {
+                drawStartScreen();
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            if (gameOver) {
+                drawGameOverScreen();
+                return;
+            }
+
+            // Draw bird
+            ctx.fillStyle = 'blue'; 
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+            // Update bird position
+            bird.y += bird.speedY;
+            bird.speedY += bird.gravity;
+
+            // Generate pipes
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+                let pipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap));
+                pipes.push({
+                    x: canvas.width,
+                    y: pipeHeight
+                });
+            }
+
+            // Move pipes
+            pipes.forEach(pipe => {
+                pipe.x -= pipeSpeed;
+
+                // Remove offscreen pipes
+                if (pipe.x + pipeWidth <= 0) {
+                    pipes.shift();
+                }
+
+                // Collision detection with pipes
+                if (bird.x < pipe.x + pipeWidth && bird.x + bird.width > pipe.x) {
+                    if (bird.y < pipe.y || bird.y + bird.height > pipe.y + pipeGap) {
+                        gameOver = true;
+                    }
+                }
+
+                // Increase score when passing pipes
+                if (pipe.x + pipeWidth === bird.x) {
+                    score++;
+                }
+            });
+
+            // Draw pipes
+            ctx.fillStyle = 'black';
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.y);
+                ctx.fillRect(pipe.x, pipe.y + pipeGap, pipeWidth, canvas.height - pipe.y -  pipeGap);
+            });
+
+            // Draw score
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+
+            // Request animation frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Handle spacebar for jumping and game start
+        document.addEventListener('keydown', function(event) {
+            if (!gameStarted && event.code === 'Space') {
+                gameStarted = true;
+                gameLoop();
+            } else if (gameOver && event.code === 'Space') {
+                resetGame();
+            } else if (gameStarted && !gameOver && event.code === 'Space') {
+                bird.speedY = bird.jump;
+            }
+        });
+
+        // Draw start screen
+        function drawStartScreen() {
+            ctx.fillStyle = '#000';
+            ctx.font = '30px Arial';
+            ctx.fillText('Press Spacebar to Start', 50, canvas.height / 2);
+        }
+
+        // Draw game over screen
+        function drawGameOverScreen() {
+            ctx.fillStyle = '#000';
+            ctx.font = '30px Arial';
+            ctx.fillText(`Game Over! Your score: ${score}`, 30, canvas.height / 2);
+            ctx.fillText('Press Spacebar to Restart', 30, canvas.height / 2 + 40);
+        }
+
+        // Reset game
+        function resetGame() {
+            bird.y = canvas.height / 2 - 15;
+            bird.speedY = 0;
+            pipes = [];
+            score = 0;
+            gameOver = false;
+            gameStarted = false;
+        }
+
+        // Go back function
+        function goBack() {
+            window.history.back();
+        }
+
+        // Start the game loop
+        drawStartScreen();
+    </script>
+</body>
+</html>
